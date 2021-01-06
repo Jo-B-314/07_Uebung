@@ -52,9 +52,11 @@ int main (int argc, char* argv[]) {
      * 32 => M->L
      */
     // now we add the objective function
-    REAL objective[33] = {0, 12, 2, 3, 12, 3, 1, 15, 2, 4, 3, 3, 4, 
+    REAL objective[32] = {12, 2, 3, 12, 3, 1, 15, 2, 4, 3, 3, 4, 
         3, 2, 6, 1, 3, 4, 2, 2, 2, 2, 2, 4, 6, 2, 3, 15, 2, 10, 3, 10};
-    set_obj_fnex(lp, 32, objective, NULL);
+    int helper0[32] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,
+        23,24,25,26,27,28,29,30,31,32};
+    set_obj_fnex(lp, 32, objective, helper0);
     //now we tell we want to minimize
     set_minim(lp);
     //first constraint: no incoming edges from A
@@ -81,21 +83,9 @@ int main (int argc, char* argv[]) {
     add_constraintex(lp, 2, row3, helper3, EQ, 1.0);
     //fourth constraint: for all B....L #incoming edges = #outgoing edges
     //B
-    REAL rowB[33];
-    for (int i = 0; i < 33; i++) {
-        rowB[i] = 0;
-    }
-    //outgoning edges
-    rowB[4] = 1; //B->A
-    rowB[5] = 1; //B->E
-    rowB[6] = 1; //B->F
-    rowB[7] = 1; //B->L
-    //incoming edges
-    rowB[1] = -1; //A->B
-    rowB[13] = -1; //E->B
-    rowB[16] = -1; //F->B
-    rowB[28] = -1; //L->B
-    add_constraint(lp, rowB, EQ, 0);
+    REAL rowB[8] = {1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0};
+    int helperB[8] = {4, 5, 6, 7, 1, 13, 16, 28}; 
+    add_constraintex(lp, 8, rowB, helperB, EQ, 0.0);
     //C
     REAL rowC[33];
     for (int i = 0; i < 33; i++) {
@@ -106,7 +96,7 @@ int main (int argc, char* argv[]) {
     rowC[9] = 1; //C->J
     //incoming edges
     rowC[2] = -1; //A->C
-    rowC[26] = -1; //J->C
+    rowC[24] = -1; //J->C
     add_constraint(lp, rowC, EQ, 0);
     //D
     REAL rowD[33];
@@ -229,16 +219,19 @@ int main (int argc, char* argv[]) {
     if (!solve(lp)) {
         // we have a solution now we want to now it
         REAL solution[32];
-        for (int i = 0; i< 32; i++) {
-            solution[i] = get_var_primalresult(lp, i+1);
-        }
-        std::string erg;
+        get_variables(lp, solution);
+        std::vector<std::string> erg;
         for (int i = 0; i < 32; i++) {
             if (solution[i]) {
-                erg += get_edge_name(i+1);
+                erg.push_back(get_edge_name(i+1));
             }
         }
-        std::cout << "computed path: \n" << erg << std::endl;
+        erg = sort(erg);
+        std::cout << "computed path: \n";
+        for (std::vector<std::string>::iterator iter = erg.begin(); iter != erg.end(); iter++) {
+            std::cout << *iter;
+        }
+        std::cout << std::endl;
         delete_lp(lp);
     return 0;
     } else {
@@ -286,4 +279,21 @@ std::string get_edge_name(int i) {
         case 32: res = "M->L, "; break;        
     }
     return res;
+}
+
+std::vector<std::string> sort(std::vector<std::string> vector) {
+    char start = 'A';
+    std::vector<std::string> erg;
+    while (start != 'M') {
+        std::vector<std::string>::iterator iter = vector.begin();
+        for (; iter != vector.end(); iter++) {
+            std::string actual = *iter;
+            if (actual.at(0) == start) {
+                start = actual.at(3);
+                erg.push_back(actual);
+                break;
+            }
+        }
+    }
+    return erg;
 }
