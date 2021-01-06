@@ -3,10 +3,11 @@
 #include<cstring>
 #include<fstream>
 #include<cassert>
+#include<vector>
 #include "lp_lib.h"
 
 std::string get_edge_name(int i);
-
+std::vector<std::string> sort(std::vector<std::string>);
 
 int main (int argc, char* argv[]) {
     lprec *lp;
@@ -57,61 +58,199 @@ int main (int argc, char* argv[]) {
     //now we tell we want to minimize
     set_minim(lp);
     //first constraint: no incoming edges from A
-    REAL row1[33];
-    for (int i = 0; i < 33; i++) {
-        row1[i] = 0;
+    REAL row1[3];
+    row1[0] = 1.0; //B->A
+    row1[1] = 1.0; //C->A
+    row1[2] = 1.0; //D->A
+    int helper1[3] = {4,8,10};
+    if (!add_constraintex(lp, 3, row1, helper1, EQ, 0.0)) {
+        std::cerr << "Hilfe\n";
     }
-    row1[4] = 1; //B->A
-    row1[8] = 1; //C->A
-    row1[10] = 1; //D->A
-    add_constraint(lp, row1, 3, 0);
     //second constraint: exactly one outgoing edge from A
-    REAL row2[33];
-    for (int i = 0; i < 33; i++) {
-        row2[i] = 0;
+    REAL row2[3];
+    row2[0] = 1.0; //A->B
+    row2[1] = 1.0; //A->C
+    row2[2] = 1.0; //A->D
+    int helper2[3] = {1,2,3};
+    if (!add_constraintex(lp, 3, row2, helper2, EQ, 1.0)) {
+        std::cerr << "oh nein\n";
     }
-    row2[1] = 1; //A->B
-    row2[2] = 2; //A->C
-    row2[3] = 3; //A->D
-    add_constraint(lp, row2, 3, 1);
     //third constraint: exactly one incoming edge from M
-    REAL row3[33];
-    for (int i = 0; i < 33; i++) {
-        row3[i] = 0;
-    }
-    row3[27] = 1; //K->M
-    row3[30] = 1; //L->M
-    add_constraint(lp, row3, 3, 1);
+    REAL row3[2] = {1.0, 1.0};
+    int helper3[2] = {27,30};
+    add_constraintex(lp, 2, row3, helper3, EQ, 1.0);
     //fourth constraint: for all B....L #incoming edges = #outgoing edges
-    //TODO
+    //B
+    REAL rowB[33];
+    for (int i = 0; i < 33; i++) {
+        rowB[i] = 0;
+    }
+    //outgoning edges
+    rowB[4] = 1; //B->A
+    rowB[5] = 1; //B->E
+    rowB[6] = 1; //B->F
+    rowB[7] = 1; //B->L
+    //incoming edges
+    rowB[1] = -1; //A->B
+    rowB[13] = -1; //E->B
+    rowB[16] = -1; //F->B
+    rowB[28] = -1; //L->B
+    add_constraint(lp, rowB, EQ, 0);
+    //C
+    REAL rowC[33];
+    for (int i = 0; i < 33; i++) {
+        rowC[i] = 0;
+    }
+    //outgoing edges
+    rowC[8] = 1; //C->A
+    rowC[9] = 1; //C->J
+    //incoming edges
+    rowC[2] = -1; //A->C
+    rowC[26] = -1; //J->C
+    add_constraint(lp, rowC, EQ, 0);
+    //D
+    REAL rowD[33];
+    for (int i = 0; i < 33; i++) {
+        rowD[i] = 0;
+    }
+    //outgoing edges
+    rowD[10] = 1; //D->A
+    rowD[11] = 1; //D->F
+    rowD[12] = 1; //D->G
+    //incoming edges
+    rowD[3] = -1; //A->D
+    rowD[17] = -1; //F->D
+    rowD[18] = -1; //G->D
+    add_constraint(lp, rowD, EQ, 0);
+    //E
+    REAL rowE[33];
+    for (int i = 0; i < 33; i++) {
+        rowE[i] = 0;
+    }
+    //outgoing edges
+    rowE[13] = 1; //E->B
+    rowE[14] = 1; //E->I
+    rowE[15] = 1; //E->J
+    //incoming edges
+    rowE[5] = -1; //B->E
+    rowE[22] = -1; //I->E
+    rowE[25] = -1; //J->E
+    add_constraint(lp, rowE, EQ, 0);
+    //F
+    REAL rowF[33];
+    for (int i = 0; i < 33; i++) {
+        rowF[i] = 0;
+    }
+    //outgoing edges
+    rowF[16] = 1; //F->B
+    rowF[17] = 1; //F->D
+    //incoming edges
+    rowF[6] = -1; //B->F
+    rowF[11] = -1; //D->F
+    add_constraint(lp, rowF, EQ, 0);
+    //G
+    REAL rowG[33];
+    for (int i = 0; i < 33; i++) {
+        rowG[i] = 0;
+    }
+    //outgoing edges
+    rowG[18] = 1; //G->D
+    rowG[19] = 1; //G->H
+    //incoming edges
+    rowG[12] = -1; //D->G
+    rowG[20] = -1; //H->G
+    add_constraint(lp, rowG, EQ, 0);
+    //H
+    REAL rowH[33];
+    for (int i = 0; i < 33; i++) {
+        rowH[i] = 0;
+    }
+    //outgoing edges
+    rowH[20] = 1; //H->G
+    rowH[21] = 1; //H->I
+    //incoming edges
+    rowH[19] = -1; //G->H
+    rowH[23] = -1; //I->H
+    add_constraint(lp, rowH, EQ, 0);
+    //I
+    REAL rowI[33];
+    for (int i = 0; i < 33; i++) {
+        rowI[i] = 0;
+    }
+    //outgoing edges
+    rowI[22] = 1; //I->E
+    rowI[23] = 1; //I->H
+    //incoming edges
+    rowI[14] = -1; //E->I
+    rowI[21] = -1; //H->I
+    add_constraint(lp, rowI, EQ, 0);
+    //J
+    REAL rowJ[33];
+    for (int i = 0; i < 33; i++) {
+        rowJ[i] = 0;
+    }
+    //outgoing edges
+    rowJ[24] = 1; //J->C
+    rowJ[25] = 1; //J->E
+    //incoming edges
+    rowJ[9] = -1; //C->J
+    rowJ[15] = -1; //E->J
+    add_constraint(lp, rowJ, EQ, 0);
+    //K
+    REAL rowK[33];
+    for (int i = 0; i < 33; i++) {
+        rowK[i] = 0;
+    }
+    //outgoing edges
+    rowK[26] = 1; //K->L
+    rowK[27] = 1; //K->M
+    //incoming edges
+    rowK[29] = -1; //L->K
+    rowK[31] = -1; //M->K
+    add_constraint(lp, rowK, EQ, 0);
+    //L
+    REAL rowL[33];
+    for (int i = 0; i < 33; i++) {
+        rowL[i] = 0;
+    }
+    //outgoing edges
+    rowL[28] = 1; //L->B
+    rowL[29] = 1; //L->K
+    rowL[30] = 1; //L->M
+    //incoming edges
+    rowL[7] = -1; //B->L
+    rowL[26] = -1; //K->L
+    rowL[32] = -1; //M->L
+    add_constraint(lp, rowL, EQ, 0);
     //all our variables must be binary
     for (int i = 1; i <= 32; i++) {
         set_binary(lp, i, 1);
     }
-    if (solve(lp)) {
+    if (!solve(lp)) {
         // we have a solution now we want to now it
         REAL solution[32];
-        for (int i = 1; i<= 32; i++) {
-            solution[i-1] = get_var_primalresult(lp, i);
+        for (int i = 0; i< 32; i++) {
+            solution[i] = get_var_primalresult(lp, i+1);
         }
         std::string erg;
         for (int i = 0; i < 32; i++) {
-            REAL comp1 = 1;
-            if (solution[i] == comp1) {
+            if (solution[i]) {
                 erg += get_edge_name(i+1);
             }
         }
         std::cout << "computed path: \n" << erg << std::endl;
+        delete_lp(lp);
     return 0;
     } else {
         std::cerr << "No optimal solution found\n";
+        delete_lp(lp);
         return 1;
     }
 }
 
 
 std::string get_edge_name(int i) {
-    std::string res;
+    std::string res = "fehler ";
     switch (i) {
         case 1: res = "A->B, "; break;
         case 2: res = "A->C, "; break;
